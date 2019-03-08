@@ -15,10 +15,9 @@ my (
     $base_dir,
     $device_count,
     $filtered_list,
-    $opt_help,
-    $parse_externalList,
     $device_pattern,
     @device_match,
+    $parse_external_file,
 );
 
 # defining some global variables
@@ -28,7 +27,7 @@ $customer_name =~ s/\s+$//;
 # script arguments
 GetOptions('d|device_pattern=s' => \$device_pattern,
            'l|list'             => \$filtered_list,
-           'p|parse'            => \$parse_externalList,
+           'p|parse=s'            => \$parse_external_file,
            'help|?|h'           => sub { help(); },
         ) or die help();
 
@@ -56,32 +55,40 @@ sub print_device_pattern {
     printf "I FOUND: %d DEVICES\n",$device_count;
 }
 
-sub parse_list {
-    my $external_list = $_;
-    open(FH, "<", $external_list) or die "I cannot open: $external_list: $!";
+sub parse_external_file {
+    my $external_file = shift;
+    open(FH, "<", $external_file) 
+    or die "Could not open file '$external_file' OR file does not exist\nERROR: $!";
+    while (<FH>) {
+        print "$_";
+    }
+    close FH;
 }
 
 sub create_file {
+
     my $filename = $customer_name."_filteredList.txt";
-    open(FH, '>', $filename) or die "Could not open file '$filename': $!";
+    open(FH, '>', $filename) 
+    or die "I could not create file '$filename': $!";
+
     foreach my $config (@device_match) {
         print FH $config;
     }
     close FH;
     print "\n$filename HAS BEEN CREATED...\n\n";
+
 }
+
 # set the search according to device_pattern entered, if no patter was entered
 # then parse the whole directory content
 if ($device_pattern) {
     print_device_pattern();
-} else {
-    help;
 }
 if ($device_pattern && $filtered_list) {
     create_file();
 }
-if ($parse_externalList) {
-    parse_list();
+if ($parse_external_file) {
+    parse_external_file($parse_external_file);
 }
 
 __END__
