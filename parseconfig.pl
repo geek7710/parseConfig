@@ -18,7 +18,7 @@ my (
     $config_file_pattern,
     @config_match,
     @config_all_list,
-    $parse_external_file,
+    $parse_config_file,
     $config_list_file,
     $list_dir_pattern,
     $list_all_configs,
@@ -32,7 +32,7 @@ $customer_name =~ s/\s+$//;
 # script arguments
 GetOptions('r|regex=s'          => \$config_file_pattern,
            'c|create'           => \$print_to_file,
-           'p|parse=s'          => \$parse_external_file,
+           'p|parse=s'          => \$parse_config_file,
            'f|file=s'           => \$config_list_file,
            'l|list'             => \$list_dir_pattern,
            '-a|all'             => \$list_all_configs,
@@ -62,6 +62,7 @@ sub help {
     print "  $0 -r|--regex <regex> -p|--parse [regex1] [regex2]...\n";
     print "\n=============================================\n\n";
 }
+
 sub generate_list_from_pattern {
     my $configName;
     foreach $configName (@ConfigList_unfiltered) {
@@ -157,19 +158,38 @@ sub print_all_to_file {
     print "\nFILE: $filename HAS BEEN CREATED...\n\n";
 }
 
-sub open_config_list {
-    # declaring local variables
-    my $config;
-    open($config, '<', $config_list_file) or
-    die "Cannot open $config_list_file file: $!";
-    while (<$config>) {
-        print $_;
-    }
-}
-
 sub open_config {
-    
-    
+    my $config_line;
+    my $index;
+    my $line_start;
+    my $line_end;
+    my @clean_config;
+    foreach my $config_line (@config_match) {
+        $config_line =~ s/^\s+|\s+$//g;
+        $config_line = $base_dir . $config_line;
+        open(FH ,'<', $config_line)
+        or die "I could not open: $config_line: $!\n";
+        while (<FH>) {
+            $index++;
+            if ($_ =~ '@!RANCID-CONTENT-TYPE:.+') {
+                $line_start = $index;
+                next;
+            }
+            if ($line_start and $line_end) {
+                last;
+            } elsif ($line_start and $_ =~ '@$') {
+                $line_end = $index;
+            } elsif ($line_start) {
+                push(@clean_config, $_);
+            }
+        }
+        close FH;
+        printf "CONFIG FILE FOR: %s",$config_line;
+        foreach my $line (@clean_config){
+            print $line;
+        }
+        exit;
+    }
 }
 
 # set the search according to device_pattern entered, if no patter was entered
@@ -178,14 +198,13 @@ if ($config_file_pattern && $list_dir_pattern) {
     print_pattern_match();
 } elsif ($config_file_pattern && $print_to_file) {
     print_pattern_to_file();
-} elsif ($parse_external_file) {
-    parse_external_file($parse_external_file);
-} elsif ($config_list_file) {
-    open_config_list();
 } elsif ($list_all_configs && $print_to_file) {
     print_all_to_file();
 } elsif($list_all_configs && $list_dir_pattern) {
     print_all_clean();
+} elsif ($config_file_pattern && $parse_config_file) {
+    generate_list_from_pattern();
+    open_config();
 } else {
     help();
 }
