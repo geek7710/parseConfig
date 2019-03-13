@@ -21,7 +21,7 @@ my (
     $parse_external_file,
     $config_list_file,
     $list_dir_pattern,
-    $list_directory,
+    $list_all_configs,
     @configList_filtered,
 );
 
@@ -35,7 +35,7 @@ GetOptions('r|regex=s'          => \$config_file_pattern,
            'p|parse=s'          => \$parse_external_file,
            'f|file=s'           => \$config_list_file,
            'l|list'             => \$list_dir_pattern,
-           '-a|all'             => \$list_directory,
+           '-a|all'             => \$list_all_configs,
            'help|?|h'           => sub { help(); },
         ) or die help();
 
@@ -127,7 +127,7 @@ sub parse_external_file {
     close FH;
 }
 
-sub print_to_file {
+sub print_pattern_to_file {
     #initializing local variables
     my @list_to_print;
     my $filename = $customer_name."_filteredList.txt";
@@ -143,7 +143,18 @@ sub print_to_file {
         print FH $config;
     }
     close FH;
-    print "\n$filename HAS BEEN CREATED...\n\n";
+    print "\nFILE: $filename HAS BEEN CREATED...\n\n";
+}
+
+sub print_all_to_file {
+    my $filename = $customer_name."_filteredList.txt";
+    open(FH, '>', $filename) 
+    or die "I could not create file '$filename': $!";
+    foreach my $config_file (@ConfigList_unfiltered){
+        print FH $config_file;
+    }
+    close FH;
+    print "\nFILE: $filename HAS BEEN CREATED...\n\n";
 }
 
 sub open_config_list {
@@ -166,14 +177,14 @@ sub open_config {
 if ($config_file_pattern && $list_dir_pattern) {
     print_pattern_match();
 } elsif ($config_file_pattern && $print_to_file) {
-    print_to_file();
+    print_pattern_to_file();
 } elsif ($parse_external_file) {
     parse_external_file($parse_external_file);
 } elsif ($config_list_file) {
     open_config_list();
-} elsif ($list_directory && $print_to_file) {
-    print_to_file();
-} elsif($list_directory && $list_dir_pattern) {
+} elsif ($list_all_configs && $print_to_file) {
+    print_all_to_file();
+} elsif($list_all_configs && $list_dir_pattern) {
     print_all_clean();
 } else {
     help();
