@@ -18,7 +18,7 @@ my (
     $config_file_pattern,
     @config_match,
     @config_all_list,
-    $parse_config_file,
+    @lookfor_pattern,
     $config_list_file,
     $list_dir_pattern,
     $list_all_configs,
@@ -32,7 +32,7 @@ $customer_name =~ s/\s+$//;
 # script arguments
 GetOptions('r|regex=s'          => \$config_file_pattern,
            'c|create'           => \$print_to_file,
-           'p|parse=s'          => \$parse_config_file,
+           'p|parse=s'          => \@lookfor_pattern,
            'f|file=s'           => \$config_list_file,
            'l|list'             => \$list_dir_pattern,
            '-a|all'             => \$list_all_configs,
@@ -163,8 +163,11 @@ sub open_config {
     my $index;
     my $line_start;
     my $line_end;
-    my @clean_config;
-    foreach my $config_line (@config_match) {
+    my @clean_config; 
+    my $found;
+    foreach my $config_file_name (@config_match) {
+        $config_line = $config_file_name;
+        $config_file_name =~ s/,v$//;
         $config_line =~ s/^\s+|\s+$//g;
         $config_line = $base_dir . $config_line;
         open(FH ,'<', $config_line)
@@ -184,11 +187,15 @@ sub open_config {
             }
         }
         close FH;
-        printf "CONFIG FILE FOR: %s",$config_line;
+        printf "\nDEVICE NAME: %s\n",$config_file_name;
         foreach my $line (@clean_config){
-            print $line;
+            for my $pattern (@lookfor_pattern) {
+                if ($line =~ $pattern) {
+                    print "$line";
+                }
+            }
         }
-        exit;
+        print "\n\n";
     }
 }
 
@@ -202,7 +209,8 @@ if ($config_file_pattern && $list_dir_pattern) {
     print_all_to_file();
 } elsif($list_all_configs && $list_dir_pattern) {
     print_all_clean();
-} elsif ($config_file_pattern && $parse_config_file) {
+} elsif ($config_file_pattern && @lookfor_pattern) {
+    @lookfor_pattern = split(',', join(',',@lookfor_pattern));
     generate_list_from_pattern();
     open_config();
 } else {
