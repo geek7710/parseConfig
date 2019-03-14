@@ -164,7 +164,8 @@ sub open_config {
     my $line_start;
     my $line_end;
     my @clean_config; 
-    my $found;
+    my @found;
+    my $start_time = time;
     foreach my $config_file_name (@config_match) {
         $config_line = $config_file_name;
         $config_file_name =~ s/,v$//;
@@ -188,15 +189,21 @@ sub open_config {
         }
         close FH;
         printf "\nDEVICE NAME: %s\n",$config_file_name;
-        foreach my $line (@clean_config){
-            for my $pattern (@lookfor_pattern) {
+        foreach my $line (@clean_config) {
+            #print "CONFIG: $line";
+            foreach my $pattern (@lookfor_pattern) {
                 if ($line =~ $pattern) {
                     print "$line";
                 }
             }
         }
         print "\n\n";
+        undef @clean_config;
+        undef $line_start;
+        undef $line_end;
     }
+    printf "DURATION: %d seconds\n\n",time - $start_time;
+
 }
 
 # set the search according to device_pattern entered, if no patter was entered
